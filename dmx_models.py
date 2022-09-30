@@ -16,13 +16,13 @@ class mel_scale(nn.Module):
         
     def forward(self, x):
         #xt = torch.transpose(x,1,2)
-        xt = torch.flatten(x,1)
-        y = torch.pow(xt,2)
+        x = torch.flatten(x,1)
+        y = torch.pow(x,2)
         y = torch.mul(y,0.001)
         y = torch.add(y,1)
         y = torch.tanh(y) # replace log with tanh
         y = torch.mul(y,2595) 
-        #y = y.type(torch.CharTensor)
+        y = y.type(torch.CharTensor)
         return y
 
 class reshape_casting(nn.Module):
@@ -32,18 +32,19 @@ class reshape_casting(nn.Module):
     def forward(self, x):
         y = torch.pow(x,2)
         y = torch.mul(x,0.5) # normalization constant                                
-        yt = torch.transpose(y,1,2)
+        #yt = torch.transpose(y,1,2)
+        y = torch.reshape(y, (1024*8, 4096))
         y = y.type(torch.CharTensor)        
-        return yt
+        return y
 
 class image_resize(nn.Module):
     def __init__(self):
         super(image_resize, self).__init__()            
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
         
-    def forward(self, x):
+    def forward(self, xt):
         #y  = nn.Identity(x)
-        xt = torch.transpose(x,1,2)           
+        xt = torch.transpose(xt,2,3)
         z = self.max_pool(xt)
         return z
 
@@ -54,6 +55,7 @@ class concat_cast_flatten(nn.Module):
         def forward(self, x):       
             xc = torch.cat((x, x), 1)
             xt = xc.type(torch.IntTensor)
-            #xt = torch.div(xc,2)			
+            xt = torch.div(xc,2)	
+            xt = torch.transpose(xt,2,3)		
             xf = torch.flatten(xt,1)
             return xf
