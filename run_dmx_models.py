@@ -2,6 +2,7 @@ import sys, os
 import torch
 from torch import nn
 import time
+from torch.profiler import profile, record_function, ProfilerActivity
 
 from dmx_models import concat_cast_flatten, image_resize, reshape_casting, mel_scale
 
@@ -22,9 +23,12 @@ def run_dmx_ops(input_shape, name):
     model.eval()
     start = time.time()
     iterations = 10
-    for x in range(iterations):
-        output = model(input) 
-        #print(output.shape)
+    with profile(activities=[ProfilerActivity.CPU], record_shapes=True) as prof:
+        with record_function("model_inference"):
+            for x in range(iterations):
+                output = model(input) 
+            #print(output.shape)
+    print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
     end = time.time()
     avg_time = (end - start)/iterations
     print(f"mean_data_transformation_time:{avg_time}")
