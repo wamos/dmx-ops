@@ -15,7 +15,7 @@ class mel_scale(nn.Module):
         super(mel_scale, self).__init__()
         
     def forward(self, x):
-        #xt = torch.transpose(x,1,2)
+        #x = torch.transpose(x,1,2)
         x = torch.flatten(x,1)
         y = torch.pow(x,2)
         y = torch.mul(y,0.001)
