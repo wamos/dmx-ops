@@ -8,9 +8,9 @@ from torch.profiler import profile, record_function, ProfilerActivity
 from dmx_models import concat_cast_flatten, image_resize, reshape_casting, mel_scale
 
 def run_dmx_ops(input_shape, name, num_threads):    
-    input_var = torch.randn(*input_shape)
-    device = torch.device("cpu")
     torch.set_num_threads(num_threads)
+    input_var = torch.randn(*input_shape)
+    device = torch.device("cpu")    
     input = input_var.to(device)
     if name == "mel_scale":
         model = mel_scale().to(device)
@@ -21,7 +21,7 @@ def run_dmx_ops(input_shape, name, num_threads):
     elif name == "concat_cast_flatten":
         model = concat_cast_flatten().to(device)
 
-    model.eval()
+    model.eval()    
     iterations = 100
     time_list = np.zeros(iterations)
     for i in range(iterations):
