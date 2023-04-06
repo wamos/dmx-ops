@@ -127,7 +127,7 @@ if benchmark_name == "benchmark2":
                     22.334, 50.579, 100.806, 153.319])
     second_kernel.fill(b2_k2)
     acc_kernel.fill(b2)
-    data_movement = [b2_dma_1k, b2_dma_5k, b2_dma_10k, b2_dma_15k] * 3
+    data_movement = [b2_dma_1k, b2_dma_5k, b2_dma_10k, b2_dma_15k] * 2
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead    
     #print(data_movement)
@@ -138,7 +138,7 @@ elif benchmark_name == "benchmark3":
                     20.77, 47.276, 93.770, 142.145])
     second_kernel.fill(b3_k2)
     acc_kernel.fill(b3)
-    data_movement = [b3_dma_1k, b3_dma_5k, b3_dma_10k, b3_dma_15k] * 3
+    data_movement = [b3_dma_1k, b3_dma_5k, b3_dma_10k, b3_dma_15k] * 2
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark1":
@@ -147,7 +147,7 @@ elif benchmark_name == "benchmark1":
                     47.851, 64.933, 92.831, 126.483])
     second_kernel.fill(b1_k2)
     acc_kernel.fill(b1)
-    data_movement = [b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k] * 3
+    data_movement = [b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k] * 2
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark4":
@@ -156,7 +156,7 @@ elif benchmark_name == "benchmark4":
                     70.431, 71.660, 73.014, 93.102])
     second_kernel.fill(b4_k2)
     acc_kernel.fill(b4)
-    data_movement = [b4_dma_1k, b4_dma_5k, b4_dma_10k, b4_dma_15k] * 3
+    data_movement = [b4_dma_1k, b4_dma_5k, b4_dma_10k, b4_dma_15k] * 2
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark5":
@@ -165,7 +165,7 @@ elif benchmark_name == "benchmark5":
                     62.378, 110.997, 169.177, 232.950])
     second_kernel.fill(b5_k2)
     acc_kernel.fill(b5)
-    data_movement = [b5_dma_1k, b5_dma_5k, b5_dma_10k, b5_dma_15k] * 3
+    data_movement = [b5_dma_1k, b5_dma_5k, b5_dma_10k, b5_dma_15k] * 2
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 else:
