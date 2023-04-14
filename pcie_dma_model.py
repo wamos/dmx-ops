@@ -167,8 +167,78 @@ def pcie_switching_power_dmx_on_acc(data_size:int, num_kernel: int, pcie_gen: st
 
     return power # in watts
 
+pci_gen3_power = {33:8.1, 49:14.5, 65:16.2, 81:22.5, 97:24.3}
+pci_gen4_power = {33:8.1, 49:14.5, 65:16.2, 81:22.5, 97:24.3}
 
 def pcie_switching_power_dmx_on_pcie(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
+    power = 0
+    # x16 has 15.754 GB/s
+    if pcie_gen == "gen3" and cpu_vendor == "amd": 
+        acc_pcie_lane = 16
+        #acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 128
+        upstream_ports = int(cpu_pcie_lane/acc_pcie_lane)
+        max_pcie_switch_lane = max(pci_gen3_power.keys())
+        max_downstream_ports = np.floor((max_pcie_switch_lane - acc_pcie_lane)/acc_pcie_lane)
+
+        if num_kernel == 1:            
+            power = 0
+        elif num_kernel == 5:
+            #for downstream_ports in range(1, max_downstream_ports+1):
+            single_device_pcie = upstream_ports*2 - (num_kernel*2 + 2)
+            num_switches = upstream_ports - single_device_pcie
+            power = num_switches * 14.5 # use 49-lane, 14.5 watts, lanes = 16*2 (2 downstream) + 16 (upstream) = 48
+        elif num_kernel == 10:
+            power = upstream_ports * 16.2 # use 65-lane, 16.2 watts, lanes = 16*3 (3 downstream) + 16 (upstream) =640
+        elif num_kernel == 15:
+            five_device_switch = (num_kernel*2 + 4) - upstream_ports * 4
+            power = (upstream_ports - five_device_switch)*22.5 + five_device_switch * 24.3
+        else:
+            print("un-supported number of kernels")
+
+    elif pcie_gen == "gen4" and cpu_vendor == "amd":
+        acc_pcie_lane = 8
+        #acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 128
+        upstream_ports = int(cpu_pcie_lane/acc_pcie_lane)
+
+        if num_kernel == 1 or num_kernel == 5:
+            power = 0
+        elif num_kernel == 10: 
+            single_device_pcie = upstream_ports*2 - (num_kernel*2 + 2)
+            num_switches = upstream_ports - single_device_pcie
+            power = num_switches * 11.44
+            #use 26-lane, lanes = 8*2 (2 downstream) + 8 (upstream) = 24
+        elif num_kernel == 15:
+            power = upstream_ports*11.44
+            #use 26-lane, lanes = 8*2 (2 downstream) + 8 (upstream) = 24
+        else:
+            print("un-supported number of kernels")
+
+    elif pcie_gen == "gen4" and cpu_vendor == "intel":
+        acc_pcie_lane = 8
+        cpu_pcie_lane = 64
+        upstream_ports = int(cpu_pcie_lane/acc_pcie_lane)
+
+        if num_kernel == 1:            
+            power = 0
+        elif num_kernel == 5:
+            #for downstream_ports in range(1, max_downstream_ports+1):
+            single_device_pcie = upstream_ports*2 - (num_kernel*2 + 2)
+            num_switches = upstream_ports - single_device_pcie
+            power = num_switches * 11.44  # use 24-lane, 11.44 watts, lanes = 8*2 (2 downstream) + 8 (upstream) = 24
+        elif num_kernel == 10:
+            power = upstream_ports * 13.18 # use 34-lane, 13.18 watts, lanes = 8*3 (3 downstream) + 8 (upstream) = 32
+        elif num_kernel == 15:
+            power = upstream_ports * 18.81 # use 34-lane, 13.18 watts, lanes = 8*5 (3 downstream) + 8 (upstream) = 32
+        else:
+            print("un-supported number of kernels")
+    else:
+        print("un-supported")
+
+    return power
+
+def pcie_switching_power_single_dmx_on_pcie(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
     pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
     mem_wrtie_hdr = 24 # 2B framing, 6B DLL header, 4B TLP header, and 12B MWr header
     raw_size = data_size
@@ -395,12 +465,14 @@ def dma_time(dmx_placment: str,data_size:int, num_kernel: int, pcie_gen: str, cp
         time = dma_time_dmx_on_cpu(data_size, num_kernel, pcie_gen, cpu_vendor)*4
     elif dmx_placment == "cpu":
         time = dma_time_dmx_on_cpu(data_size, num_kernel, pcie_gen, cpu_vendor)*4
-    elif dmx_placment == "pcie":
+    elif dmx_placment == "pcie": # over-provisioned
         time = dma_time_dmx_on_pcie(data_size, num_kernel, pcie_gen, cpu_vendor)*4
+    elif dmx_placment == "pcie-under":
+        time = dma_time_dmx_on_pcie_under_provisioned(data_size, num_kernel, pcie_gen, cpu_vendor)*4
     elif dmx_placment == "acc":
         time = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)*3 + acc_axi_delay*2
     else:
-        print("unsuppoted DMX placement")
+        print(f"unsuppoted DMX placement {dmx_placment}")
     return time
 
 def dma_time_dmx_on_acc(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
@@ -544,7 +616,184 @@ def dma_time_dmx_on_acc(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendo
 
     return time # in ms
 
+def dma_time_dmx_on_pcie_under_provisioned(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
+    pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
+    mem_wrtie_hdr = 24 # 2B framing, 6B DLL header, 4B TLP header, and 12B MWr header
+    raw_size = data_size
+    data_size = np.ceil(data_size/pcie_mps) * mem_wrtie_hdr + data_size
+
+    time = 0
+    if pcie_gen == "gen4" and cpu_vendor == "amd":
+        acc_pcie_lane = 8
+        acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 128
+        full_rate = 15.754 * 1e9 # x8 rate
+        if num_kernel == 1:
+            rate = full_rate
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 5:
+            # 1-SIMD -> 1.25 x compute,  1/5 full rate DMA,  2-SIMD -> 1x compute, 2/5 full rate
+            rate = full_rate*1/5
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 10:
+            rate = full_rate*1/5
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 15:
+            rate = full_rate*1/5
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        else:
+            print("un-supported number of kernels")
+
+    elif pcie_gen == "gen4" and cpu_vendor == "intel":
+        acc_pcie_lane = 8
+        acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 64
+        full_rate = 15.754 * 1e9 # x8 rate
+        if num_kernel == 1:
+        # 10*8=80 lanes, 80/4 = (24, 24, 16, 16)
+            rate = full_rate
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 5:
+            # 1-SIMD ->  1.25 x compute,  1/5 rate DMA,  2-SIMD -> 1x compute, 2/5 rate
+            rate = full_rate*1/5
+            time = data_size/rate
+            time = time * 1000 # in ms
+            # 3 PCIe switches have 2 devices, 5 other upstream directly connect a single device
+            time = time + 3/8*pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 10:
+            #2-SIMD -> 1.25 x compute, 0.16 full rate, 3-SIMD -> 1x compute, 0.24 full rate
+            rate = full_rate*0.16
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 15:
+            # 3-SIMD -> 1.25 x compute, 0.1125 full rate, 4-SIMD -> 1x compute, 0.15 full rate
+            rate = full_rate*0.1125
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        else:
+            print("un-supported number of kernels")
+
+    else: # gen 3 intel and gen 5 intel + AMD
+        print("un-supported")
+        time = 0
+
+    return time
+
+# 4-unit SIMD
 def dma_time_dmx_on_pcie(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
+    pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
+    mem_wrtie_hdr = 24 # 2B framing, 6B DLL header, 4B TLP header, and 12B MWr header
+    raw_size = data_size
+    data_size = np.ceil(data_size/pcie_mps) * mem_wrtie_hdr + data_size
+    time = 0
+    if pcie_gen == "gen3" and cpu_vendor == "amd": 
+        acc_pcie_lane = 16
+        acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 128
+        full_rate = 15.754 * 1e9 # x16 rate
+        # for the case of 5, 10, 15 kernels
+        if num_kernel == 1:
+            rate = full_rate
+            time = data_size/rate
+            time = time * 1000 # in ms                
+        elif num_kernel == 5:
+            # 1-SIMD ->  1.25 x compute,  1/5 rate DMA,  2-SIMD -> 1x compute, 2/5 rate
+            rate = full_rate*0.4
+            time = data_size/rate
+            time = time * 1000 # in ms
+            # 3 PCIe switches have 2 devices, 5 other upstream directly connect a single device
+            time = time + 3/8*pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 10:
+            #2-SIMD -> 1.25 x compute, 0.16 full rate, 3-SIMD -> 1x compute, 0.24 full rate
+            rate = full_rate*0.24
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 15:
+            # 3-SIMD -> 1.25 x compute, 0.1125 full rate, 4-SIMD -> 1x compute, 0.15 full rate
+            rate = full_rate*0.15
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        else:
+            print("un-supported number of kernels")
+    
+    elif pcie_gen == "gen4" and cpu_vendor == "amd":
+        acc_pcie_lane = 8
+        acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 128
+        full_rate = 15.754 * 1e9 # x8 rate
+        if num_kernel == 1:
+            rate = full_rate
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 5:
+            # 1-SIMD -> 1.25 x compute,  1/5 full rate DMA,  2-SIMD -> 1x compute, 2/5 full rate
+            rate = full_rate*2/5
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 10:
+            rate = full_rate*3/10
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 15:
+            rate = full_rate*4/15
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        else:
+            print("un-supported number of kernels")
+
+    elif pcie_gen == "gen4" and cpu_vendor == "intel":
+        acc_pcie_lane = 8
+        acc_pcie_lane = acc_pcie_lane * 2 # a pair of accelerator
+        cpu_pcie_lane = 64
+        full_rate = 15.754 * 1e9 # x8 rate
+        if num_kernel == 1:
+        # 10*8=80 lanes, 80/4 = (24, 24, 16, 16)
+            rate = full_rate
+            time = data_size/rate
+            time = time * 1000 # in ms
+        elif num_kernel == 5:
+            # 1-SIMD ->  1.25 x compute,  1/5 rate DMA,  2-SIMD -> 1x compute, 2/5 rate
+            rate = full_rate*0.4
+            time = data_size/rate
+            time = time * 1000 # in ms
+            # 3 PCIe switches have 2 devices, 5 other upstream directly connect a single device
+            time = time + 3/8*pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 10:
+            #2-SIMD -> 1.25 x compute, 0.16 full rate, 3-SIMD -> 1x compute, 0.24 full rate
+            rate = full_rate*0.24
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        elif num_kernel == 15:
+            # 3-SIMD -> 1.25 x compute, 0.1125 full rate, 4-SIMD -> 1x compute, 0.15 full rate
+            rate = full_rate*0.15
+            time = data_size/rate
+            time = time * 1000 # in ms
+            time = time + pcie_switching_delay(raw_size,pcie_gen)
+        else:
+            print("un-supported number of kernels")
+
+    else: # gen 3 intel and gen 5 intel + AMD
+        print("un-supported")
+        time = 0
+
+    return time
+
+# single unit SIMD
+def dma_time_single_dmx_on_pcie(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
     pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
     mem_wrtie_hdr = 24 # 2B framing, 6B DLL header, 4B TLP header, and 12B MWr header
     raw_size = data_size

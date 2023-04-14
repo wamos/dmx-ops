@@ -23,23 +23,23 @@ import sys
 # kernel = np.array([0.563, 0.112, 0.574, 0.125, 0.776, 0.251, 0.849, 0.307])
 
 
-w1 = 5.078 + 46.498 
-w2 = 9.747 + 37.711
-w3 = 12.685 + 3.267
-w4 = 65.601 + 22.421
-w5 = 33.381 + 39.713
+# w1 = 5.078 + 46.498 
+# w2 = 9.747 + 37.711
+# w3 = 12.685 + 3.267
+# w4 = 27.776 + 22.421
+# w5 = 33.381 + 39.713
 
-b1 = 5.078 + 46.498 
+b1 = 10.078 + 46.498 
 b2 = 9.747 + 37.711
-b3 = 12.685 + 3.267
-b4 = 65.601 + 22.421
-b5 = 33.381 + 39.713
+b3 = 12.685 + 12.762
+b4 = 22.421 + 65.601
+b5 = 33.381 + 69.625
 
 b1_k2 = 46.498 
 b2_k2 = 37.711
-b3_k2 = 3.267
-b4_k2 = 22.421
-b5_k2 = 39.713
+b3_k2 = 12.762
+b4_k2 = 65.601
+b5_k2 = 69.625
 
 #second_cpu_kernel = np.array([46.498, 46.498, 37.711, 37.711, 3.267, 3.267, 22.421, 22.421, 39.713, 39.713])
 
@@ -112,8 +112,12 @@ else:
 total = e2e + second_cpu_kernel
 data_motion = total - cpu_kernel
 data_motion_ratio = data_motion/total
+#print(f"data_motion_ratio:{data_motion_ratio}")
 cpu_kernel_ratio  = cpu_kernel/total
-
+print(f"{benchmark_name}:")
+print(f"4 cores:{cpu_kernel_ratio[0:4]}")
+print(f"8 cores:{cpu_kernel_ratio[4:8]}")
+print(f"16 cores:{cpu_kernel_ratio[8:12]}")
 
 fig, ax = plt.subplots(figsize=(15,5))
 #ax.bar(labels, e2e, width=0.5, label='emulated kernel + data motion')
