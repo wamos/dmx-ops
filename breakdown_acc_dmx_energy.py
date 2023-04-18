@@ -87,9 +87,9 @@ b4 = b4_k1 + b4_k2
 #b4_movement = b4_dma + control_pool_overhead
 b5 = b5_k1 + b5_k2
 
-acc_kernel = np.ones(12)
+acc_kernel = np.ones(16)
 #second_kernel = np.ones(12)
-dmx_exec = np.ones(12)
+dmx_exec = np.ones(16)
 
 pci_gen = "gen4"
 cpu_vendor = "intel"
@@ -118,33 +118,39 @@ else:
     print(f"invalid benchmark name {benchmark_name}")
     exit()
 
+#TODO: kernel power + data movement PCIe per bit power + data movement PCIe switch power
+
 b_dma_cpu = [dma_time("cpu", data_size, 1, pci_gen, cpu_vendor), dma_time("cpu", data_size, 5, pci_gen, cpu_vendor), dma_time("cpu", data_size, 10, pci_gen, cpu_vendor), dma_time("cpu", data_size, 15, pci_gen, cpu_vendor)]
 b_dma_pcie_overprovisioned = [dma_time("pcie", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie", data_size, 15, pci_gen, cpu_vendor)]
-#b_dma_pcie_underprovisioned = [dma_time("pcie-under", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
+b_dma_pcie_underprovisioned = [dma_time("pcie-under", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
 b_dma_acc = [dma_time("acc", data_size, 1, pci_gen, cpu_vendor), dma_time("acc", data_size, 5, pci_gen, cpu_vendor), dma_time("acc", data_size, 10, pci_gen, cpu_vendor), dma_time("acc", data_size, 15, pci_gen, cpu_vendor)]
 
+dmx_asic_power = 4.2
 b_dmx_cpu  = [dmx_time, dmx_time, dmx_time*10/8, dmx_time*15/8]
-b_dmx_pcie_overprovisioned = [dmx_time, dmx_time, dmx_time, dmx_time]
-#b_dmx_pcie_underprovisioned = [1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time]  
-b_dmx_acc  = [dmx_time, dmx_time, dmx_time, dmx_time]
+b_dmx_cpu = b_dmx_cpu*8*dmx_asic_power # (mJ)
 
-dmx_exec = [b_dmx_cpu, b_dmx_pcie_overprovisioned, b_dmx_acc]
+b_dmx_pcie_overprovisioned = [dmx_time * 1 * dmx_asic_power, dmx_time * 2 * dmx_asic_power, dmx_time * 3 * dmx_asic_power, dmx_time * 4 * dmx_asic_power]
+b_dmx_pcie_underprovisioned = [1.25*dmx_time*1*dmx_asic_power, 1.25*dmx_time*1*dmx_asic_power, 1.25*dmx_time*2*dmx_asic_power, 1.25*dmx_time*3*dmx_asic_power]
+
+b_dmx_acc  = [dmx_time * dmx_asic_power, dmx_time*5*dmx_asic_power, dmx_time*10*dmx_asic_power, dmx_time*15*dmx_asic_power]
+
+dmx_exec = [b_dmx_cpu, b_dmx_pcie_overprovisioned, b_dmx_pcie_underprovisioned, b_dmx_acc]
 dmx_exec = np.array(dmx_exec)
 dmx_exec = dmx_exec.flatten()
 
-data_movement = [b_dma_cpu, b_dma_pcie_overprovisioned, b_dma_acc]
+data_movement = [b_dma_cpu, b_dma_pcie_overprovisioned, b_dma_pcie_underprovisioned, b_dma_acc]
 data_movement = np.array(data_movement)
 data_movement = data_movement.flatten()
 
 data_movement = data_movement + control_pool_overhead   
 
 
-fig_title = f'{benchmark_name}: DMX configs (cpu,pcie,acc),' + f"PCIe {pci_gen} with CPU vendor {cpu_vendor}\n" + f"pcie+ for overprovisioned DRX" #, pcie- for underprovisioned DRX"
+fig_title = f'{benchmark_name}: DMX configs (cpu,pcie,acc),' + f"PCIe {pci_gen} with CPU vendor {cpu_vendor}\n" + f"pcie+ for overprovisioned DRX, pcie- for underprovisioned DRX"
 
 
 labels = [f'cpu 1k', f'cpu 5k', f'cpu 10k' , f'cpu 15k', 
           f'pcie+1k', f'pcie+5k', f'pcie+10k' , f'pcie+15k',
-          #f'pcie-1k', f'pcie-5k', f'pcie-10k' , f'pcie-15k',  
+          f'pcie-1k', f'pcie-5k', f'pcie-10k' , f'pcie-15k',  
           f'acc 1k', f'acc 5k', f'acc 10k' , f'acc 15k']
 
 #data_movement = data_movement*2 # rx + tx
