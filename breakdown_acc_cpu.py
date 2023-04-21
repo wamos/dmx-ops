@@ -25,7 +25,7 @@ b5_shape = (4, 1024, 512)
 b5_data_size = b5_shape[0] * b5_shape[1] * b5_shape[2] * 4 # 4-byte float
 
 b1_k1 = 16.66/8
-b2_k1 = 2.860
+b2_k1 = 30.507/8*4/3
 b3_k1 = 30.507/8 # checked
 b4_k1 = 1.138*2
 b5_k1 = 8.095
@@ -33,7 +33,7 @@ b5_k1 = 8.095
 b1_k2 = 38.3/2  
 b2_k2 = 21.12/8
 b3_k2 = 31.85/8
-b4_k2 = 7.761*1.5
+b4_k2 = 7.761
 b5_k2 = 6.602
 
 kernel_bert = 9.342 #input dim: 128 
@@ -48,11 +48,14 @@ kernel_bert = 9.342 #input dim: 128
 control_pool_overhead = 70*0.001*0.001 # ns to ms
 
 benchmark_name = sys.argv[1]
+mode = "latency"
+mode = sys.argv[2]
+
 # pci_gen = sys.argv[2]
 # cpu_vendor = sys.argv[3]
 pci_gen = "gen4"
 cpu_vendor = "intel"
-dmx_placement = "cpu"
+dmx_placement = "cpu-only"
 # def dma_time(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float: 
 # b1_dma_1k = dma_time(dmx_placement, b1_data_size, 1, pci_gen, cpu_vendor)
 # b1_dma_5k = dma_time(dmx_placement, b1_data_size, 5, pci_gen, cpu_vendor)
@@ -160,7 +163,7 @@ elif benchmark_name == "benchmark5":
 else:
     print(f"invalid benchmark name {benchmark_name}")
 
-data_movement = data_movement*2 # rx + tx
+#data_movement = data_movement*2 # rx + tx
 total = e2e + second_kernel + data_movement
 data_motion = total - acc_kernel - data_movement
 print(f"data motion: {data_motion}")
@@ -169,6 +172,11 @@ data_movement_ratio = data_movement/total
 acc_kernel_ratio  = acc_kernel/total
 #print(data_movement_ratio)
 print(f"data_movement: {data_movement}")
+
+print(f"{benchmark_name}-e2e total running time:")
+print(f"4 cores:{total[0:4]}")
+print(f"8 cores:{total[4:8]}")
+print(f"16 cores:{total[8:12]}")
 
 print(f"{benchmark_name}-acc-kernel-ratio:")
 print(f"4 cores:{acc_kernel_ratio[0:4]}")
@@ -193,19 +201,33 @@ fig, ax = plt.subplots(figsize=(15,5))
 # ax.legend(loc='best')
 # ax.set_ylabel('Latency (ms)')
 
-ax.bar(labels, acc_kernel_ratio, width=0.5, label='kernel')
-bottom = acc_kernel_ratio
-ax.bar(labels, data_motion_ratio, width=0.5, bottom=bottom, label='data motion')
-bottom = acc_kernel_ratio + data_motion_ratio
-ax.bar(labels, data_movement_ratio, width=0.5, bottom=bottom, label='dma')
-ax.legend(loc='best')
-ax.set_ylabel('Percentage (%)')
+if mode == "latency":
+    ax.bar(labels, acc_kernel, width=0.5, label='kernel')
+    bottom = acc_kernel
+    ax.bar(labels, data_motion, width=0.5, bottom=bottom, label='data restructuring')
+    bottom = acc_kernel + data_motion
+    p = ax.bar(labels, data_movement, width=0.5, bottom=bottom, label='data movement')
+    ax.bar_label(p, fmt='%.2f', label_type='edge')
+
+    ax.legend(loc='best')
+    ax.set_ylabel('Latency (ms)')
+    title = f"latency_stacks_{benchmark_name}_acc_cpu.png"
+
+elif mode == "breakdown":
+    ax.bar(labels, acc_kernel_ratio, width=0.5, label='kernel')
+    bottom = acc_kernel_ratio
+    ax.bar(labels, data_motion_ratio, width=0.5, bottom=bottom, label='data motion')
+    bottom = acc_kernel_ratio + data_motion_ratio
+    ax.bar(labels, data_movement_ratio, width=0.5, bottom=bottom, label='dma')
+    ax.legend(loc='best')
+    ax.set_ylabel('Percentage (%)')
+    title = f"breakdown_{benchmark_name}_acc_cpu.png"
 
 ax.grid(True)
 #ax.set_ylabel('Latency (ms)')
 #plt.show()
 ax.set_title(fig_title)
 #plt.savefig(f'latency_stacks_{benchmark_name}_acc.png', format='png', dpi=200)
-plt.savefig(f'breakdown_{benchmark_name}_accrun.png', format='png', dpi=200)
+plt.savefig(title, format='png', dpi=200)
 
 #fig, ax = plt.subplots(figsize=(5,5))

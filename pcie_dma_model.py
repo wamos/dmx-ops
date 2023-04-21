@@ -468,9 +468,9 @@ def dma_time(dmx_placment: str,data_size:int, num_kernel: int, pcie_gen: str, cp
     elif dmx_placment == "pcie": # DRX on PCIe card, over-provisioned DRX, aka SIMD units
         time = dma_time_dmx_on_pcie(data_size, num_kernel, pcie_gen, cpu_vendor)
     elif dmx_placment == "acc": # DRX on Acc
-        # TODO:2x CPU -> Acc data movement with possible bandwidth over-subscription
-        # [ ](a) 2x CPU -> Acc data movement with possible bandwidth over-subscription
-        # [X](b) 1x of full bandwidth between two accelerator 
+        # 2x CPU -> Acc data movement with possible bandwidth over-subscription
+        # (a) 2x CPU -> Acc data movement with possible bandwidth over-subscription
+        # (b) 1x of full bandwidth between two accelerator 
         time = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor) + acc_axi_delay*2
     else:
         print(f"unsuppoted DMX placement {dmx_placment}")

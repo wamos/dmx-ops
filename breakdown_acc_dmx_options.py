@@ -39,7 +39,7 @@ b5_shape = (4, 1024, 512)
 b5_data_size = b5_shape[0] * b5_shape[1] * b5_shape[2] * 4 # 4-byte float
 
 b1_k1 = 16.66/8
-b2_k1 = 91.521/8
+b2_k1 = 30.507/8*4/3 # scaled it right
 b3_k1 = 30.507/8 # checked
 b4_k1 = 1.138*2
 b5_k1 = 8.095
@@ -47,7 +47,7 @@ b5_k1 = 8.095
 b1_k2 = 38.3/2  
 b2_k2 = 21.12/8
 b3_k2 = 31.85/8
-b4_k2 = 7.761*1.5
+b4_k2 = 7.761
 b5_k2 = 6.602
 
 # b1_dma = 921.316 * 0.001 * 2 # round-trip DMA in ms
@@ -67,7 +67,7 @@ b1_dmx = 4.607
 b2_dmx = 1.491
 b3_dmx = 1.383
 b4_dmx = 2.097
-b5_dmx = 16.004
+b5_dmx = 2.789
 
 # This is because CPU can only have half of the DMX units
 # if dmx_placement == "cpu":
@@ -150,12 +150,27 @@ labels = [f'cpu 1k', f'cpu 5k', f'cpu 10k' , f'cpu 15k',
 #data_movement = data_movement*2 # rx + tx
 total = dmx_exec + acc_kernel + data_movement
 data_motion = dmx_exec #+ data_movement
-print(f"data motion: {dmx_exec}")
+#print(f"data motion: {dmx_exec}")
 data_motion_ratio = data_motion/total
 data_movement_ratio = data_movement/total
-print(f"data_movement:{data_movement}")
+#print(f"data_movement:{data_movement}")
 acc_kernel_ratio  = acc_kernel/total
 #print(f"data_movement_ratio:{data_movement_ratio}")
+print(f"{benchmark_name}:")
+print("e2e total running time:")
+print(f"cpu config:{total[0:4]}")
+print(f"pcie config:{total[4:8]}")
+print(f"acc config:{total[8:12]}")
+
+print("\nacc_kernel_ratio:")
+print(f"cpu config:{acc_kernel_ratio[0:4]}")
+print(f"pcie config:{acc_kernel_ratio[4:8]}")
+print(f"acc config:{acc_kernel_ratio[8:12]}")
+
+print("\ndma_ratio:")
+print(f"cpu config:{data_movement_ratio[0:4]}")
+print(f"pcie config:{data_movement_ratio[4:8]}")
+print(f"acc config:{data_movement_ratio[8:12]}")
 
 fig, ax = plt.subplots(figsize=(15,5))
 if mode == "latency":

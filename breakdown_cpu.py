@@ -66,12 +66,14 @@ b5_k2 = 69.625
 
 # 4, 8, 16 cores for 1, 5 ,10, 15 kernels
 benchmark_name = sys.argv[1]
+mode = "latency"
+mode = sys.argv[2]
 
 cpu_kernel = np.ones(12)
 second_cpu_kernel = np.ones(12)
 
 
-fig_title = f'{benchmark_name}: 4, 8, and 12 cores with proportional LLC and memory bw \nc for # of cores, k for # of kernels'
+fig_title = f'{benchmark_name}: 4, 8, and 16 cores with proportional LLC and memory bw \nc for # of cores, k for # of kernels'
 
 labels = [f'4c-1k', f'4c-5k', f'4c-10k' , f'4c-15k', 
           f'8c-1k', f'8c-5k', f'8c-10k' , f'8c-15k',  
@@ -115,21 +117,40 @@ data_motion_ratio = data_motion/total
 #print(f"data_motion_ratio:{data_motion_ratio}")
 cpu_kernel_ratio  = cpu_kernel/total
 print(f"{benchmark_name}:")
+print("e2e total running time:")
+print(f"4 cores:{total[0:4]}")
+print(f"8 cores:{total[4:8]}")
+print(f"16 cores:{total[8:12]}")
+
+print("breakdown cpu kernel ratio:")
 print(f"4 cores:{cpu_kernel_ratio[0:4]}")
 print(f"8 cores:{cpu_kernel_ratio[4:8]}")
 print(f"16 cores:{cpu_kernel_ratio[8:12]}")
 
 fig, ax = plt.subplots(figsize=(15,5))
 #ax.bar(labels, e2e, width=0.5, label='emulated kernel + data motion')
-ax.bar(labels, cpu_kernel_ratio, width=0.5, label='kernel')
-bottom = cpu_kernel_ratio
-ax.bar(labels, data_motion_ratio, width=0.5, bottom=bottom, label='data motion')
-ax.legend(loc='best')
-ax.set_ylabel('Percentage (%)')
+if mode == "latency":
+    ax.bar(labels, cpu_kernel,width=0.5, label='kernel')
+    bottom = cpu_kernel
+    p = ax.bar(labels, data_motion, width=0.5, bottom=bottom, label='data restructuring')
+    # bottom = acc_kernel + data_motion
+    # p = ax.bar(labels, data_movement, width=0.5, bottom=bottom, label='data movement')
+    ax.bar_label(p, fmt='%.2f', label_type='edge')
+
+    ax.legend(loc='best')
+    ax.set_ylabel('Latency (ms)')
+    title = f"latency_stacks_{benchmark_name}_allcpu.png"
+
+elif mode == "breakdown":
+    ax.bar(labels, cpu_kernel_ratio, width=0.5, label='kernel')
+    bottom = cpu_kernel_ratio
+    ax.bar(labels, data_motion_ratio, width=0.5, bottom=bottom, label='data motion')
+    ax.legend(loc='best')
+    ax.set_ylabel('Percentage (%)')
+    title = f"breakdown_{benchmark_name}_allcpu.png"
+
 ax.grid(True)
-#ax.set_ylabel('Latency (ms)')
-#plt.show()
 ax.set_title(fig_title)
-plt.savefig(f'breakdown_{benchmark_name}.png', format='png', dpi=200)
+plt.savefig(title, format='png', dpi=200)
 
 #fig, ax = plt.subplots(figsize=(5,5))
