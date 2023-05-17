@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gmean
 import sys
-from pcie_dma_model import dma_time
+from pcie_dma_model import dma_time, cxl_time
 
 #TODO:
 # this doesn't have end-to-end meausurement, data motion on DMX is simulated by genesys.sim 
@@ -30,7 +30,7 @@ b3_k1 = 30.507/8 # checked
 b4_k1 = 1.138*2
 b5_k1 = 8.095
 
-b1_k2 = 38.3/2  
+b1_k2 = 38.3/8  
 b2_k2 = 21.12/8
 b3_k2 = 31.85/8
 b4_k2 = 7.761
@@ -50,6 +50,7 @@ control_pool_overhead = 70*0.001*0.001 # ns to ms
 benchmark_name = sys.argv[1]
 mode = "latency"
 mode = sys.argv[2]
+interconnect_mode = "pcie"
 
 # pci_gen = sys.argv[2]
 # cpu_vendor = sys.argv[3]
@@ -63,31 +64,58 @@ dmx_placement = "cpu-only"
 # b1_dma_15k = dma_time(dmx_placement, b1_data_size, 15, pci_gen, cpu_vendor)
 #print([b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k])
 
-b1_dma_1k = dma_time(dmx_placement, b1_data_size, 1, pci_gen, cpu_vendor)
-b1_dma_5k = dma_time(dmx_placement, b1_data_size, 5, pci_gen, cpu_vendor)
-b1_dma_10k = dma_time(dmx_placement, b1_data_size, 10, pci_gen, cpu_vendor)
-b1_dma_15k = dma_time(dmx_placement, b1_data_size, 15, pci_gen, cpu_vendor)
-#print([b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k])
+if interconnect_mode == "pcie":
+    b1_dma_1k = dma_time(dmx_placement, b1_data_size, 1, pci_gen, cpu_vendor)
+    b1_dma_5k = dma_time(dmx_placement, b1_data_size, 5, pci_gen, cpu_vendor)
+    b1_dma_10k = dma_time(dmx_placement, b1_data_size, 10, pci_gen, cpu_vendor)
+    b1_dma_15k = dma_time(dmx_placement, b1_data_size, 15, pci_gen, cpu_vendor)
+    #print([b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k])
 
-b2_dma_1k = dma_time(dmx_placement, b2_data_size, 1, pci_gen, cpu_vendor)
-b2_dma_5k = dma_time(dmx_placement, b2_data_size, 5, pci_gen, cpu_vendor)
-b2_dma_10k = dma_time(dmx_placement, b2_data_size, 10, pci_gen, cpu_vendor)
-b2_dma_15k = dma_time(dmx_placement, b2_data_size, 15, pci_gen, cpu_vendor)
+    b2_dma_1k = dma_time(dmx_placement, b2_data_size, 1, pci_gen, cpu_vendor)
+    b2_dma_5k = dma_time(dmx_placement, b2_data_size, 5, pci_gen, cpu_vendor)
+    b2_dma_10k = dma_time(dmx_placement, b2_data_size, 10, pci_gen, cpu_vendor)
+    b2_dma_15k = dma_time(dmx_placement, b2_data_size, 15, pci_gen, cpu_vendor)
 
-b3_dma_1k = dma_time(dmx_placement, b3_data_size, 1, pci_gen, cpu_vendor)
-b3_dma_5k = dma_time(dmx_placement, b3_data_size, 5, pci_gen, cpu_vendor)
-b3_dma_10k = dma_time(dmx_placement, b3_data_size, 10, pci_gen, cpu_vendor)
-b3_dma_15k = dma_time(dmx_placement, b3_data_size, 15, pci_gen, cpu_vendor)
+    b3_dma_1k = dma_time(dmx_placement, b3_data_size, 1, pci_gen, cpu_vendor)
+    b3_dma_5k = dma_time(dmx_placement, b3_data_size, 5, pci_gen, cpu_vendor)
+    b3_dma_10k = dma_time(dmx_placement, b3_data_size, 10, pci_gen, cpu_vendor)
+    b3_dma_15k = dma_time(dmx_placement, b3_data_size, 15, pci_gen, cpu_vendor)
 
-b4_dma_1k = dma_time(dmx_placement, b4_data_size, 1, pci_gen, cpu_vendor)
-b4_dma_5k = dma_time(dmx_placement, b4_data_size, 5, pci_gen, cpu_vendor)
-b4_dma_10k = dma_time(dmx_placement, b4_data_size, 10, pci_gen, cpu_vendor)
-b4_dma_15k = dma_time(dmx_placement, b4_data_size, 15, pci_gen, cpu_vendor)
+    b4_dma_1k = dma_time(dmx_placement, b4_data_size, 1, pci_gen, cpu_vendor)
+    b4_dma_5k = dma_time(dmx_placement, b4_data_size, 5, pci_gen, cpu_vendor)
+    b4_dma_10k = dma_time(dmx_placement, b4_data_size, 10, pci_gen, cpu_vendor)
+    b4_dma_15k = dma_time(dmx_placement, b4_data_size, 15, pci_gen, cpu_vendor)
 
-b5_dma_1k = dma_time(dmx_placement, b5_data_size, 1, pci_gen, cpu_vendor)
-b5_dma_5k = dma_time(dmx_placement, b5_data_size, 5, pci_gen, cpu_vendor)
-b5_dma_10k = dma_time(dmx_placement, b5_data_size, 10, pci_gen, cpu_vendor)
-b5_dma_15k = dma_time(dmx_placement, b5_data_size, 15, pci_gen, cpu_vendor)
+    b5_dma_1k = dma_time(dmx_placement, b5_data_size, 1, pci_gen, cpu_vendor)
+    b5_dma_5k = dma_time(dmx_placement, b5_data_size, 5, pci_gen, cpu_vendor)
+    b5_dma_10k = dma_time(dmx_placement, b5_data_size, 10, pci_gen, cpu_vendor)
+    b5_dma_15k = dma_time(dmx_placement, b5_data_size, 15, pci_gen, cpu_vendor)
+elif interconnect_mode == "cxl":
+    b1_dma_1k = cxl_time(dmx_placement, b1_data_size, 1, pci_gen, cpu_vendor)
+    b1_dma_5k = cxl_time(dmx_placement, b1_data_size, 5, pci_gen, cpu_vendor)
+    b1_dma_10k = cxl_time(dmx_placement, b1_data_size, 10, pci_gen, cpu_vendor)
+    b1_dma_15k = cxl_time(dmx_placement, b1_data_size, 15, pci_gen, cpu_vendor)
+    #print([b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k])
+
+    b2_dma_1k = cxl_time(dmx_placement, b2_data_size, 1, pci_gen, cpu_vendor)
+    b2_dma_5k = cxl_time(dmx_placement, b2_data_size, 5, pci_gen, cpu_vendor)
+    b2_dma_10k = cxl_time(dmx_placement, b2_data_size, 10, pci_gen, cpu_vendor)
+    b2_dma_15k = cxl_time(dmx_placement, b2_data_size, 15, pci_gen, cpu_vendor)
+
+    b3_dma_1k = cxl_time(dmx_placement, b3_data_size, 1, pci_gen, cpu_vendor)
+    b3_dma_5k = cxl_time(dmx_placement, b3_data_size, 5, pci_gen, cpu_vendor)
+    b3_dma_10k = cxl_time(dmx_placement, b3_data_size, 10, pci_gen, cpu_vendor)
+    b3_dma_15k = cxl_time(dmx_placement, b3_data_size, 15, pci_gen, cpu_vendor)
+
+    b4_dma_1k = cxl_time(dmx_placement, b4_data_size, 1, pci_gen, cpu_vendor)
+    b4_dma_5k = cxl_time(dmx_placement, b4_data_size, 5, pci_gen, cpu_vendor)
+    b4_dma_10k = cxl_time(dmx_placement, b4_data_size, 10, pci_gen, cpu_vendor)
+    b4_dma_15k = cxl_time(dmx_placement, b4_data_size, 15, pci_gen, cpu_vendor)
+
+    b5_dma_1k = cxl_time(dmx_placement, b5_data_size, 1, pci_gen, cpu_vendor)
+    b5_dma_5k = cxl_time(dmx_placement, b5_data_size, 5, pci_gen, cpu_vendor)
+    b5_dma_10k = cxl_time(dmx_placement, b5_data_size, 10, pci_gen, cpu_vendor)
+    b5_dma_15k = cxl_time(dmx_placement, b5_data_size, 15, pci_gen, cpu_vendor)
 
 b1 = b1_k1 + b1_k2
 #b1_movement = b1_dma + control_pool_overhead 
@@ -122,39 +150,39 @@ if benchmark_name == "benchmark2":
     data_movement = [b2_dma_1k, b2_dma_5k, b2_dma_10k, b2_dma_15k] * 3
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead    
-    #print(data_movement)
+    print(data_movement)
     #exit()
 elif benchmark_name == "benchmark3":
-    e2e = np.array([57.164, 107.751, 213.897, 328.855,
-                    30.178, 47.783, 95.118, 145.566,
-                    20.77, 47.276, 93.770, 142.145])
+    e2e = np.array([37.164, 104.112, 209.291, 326.104,
+                    30.178, 45.237, 94.091, 145.566,
+                    20.77, 47.276, 93.770, 139.714])
     second_kernel.fill(b3_k2)
     acc_kernel.fill(b3)
     data_movement = [b3_dma_1k, b3_dma_5k, b3_dma_10k, b3_dma_15k] * 3
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark1":
-    e2e = np.array([65.756, 116.895, 230.675, 354.092,
-                    50.006, 66.734, 103.713, 157.667,
-                    47.851, 64.933, 92.831, 126.483])
+    e2e = np.array([55.570, 105.897, 207.393, 315.237,
+                    50.006, 46.145, 93.315, 137.770,
+                    27.172, 44.772, 89.708, 126.483])
     second_kernel.fill(b1_k2)
     acc_kernel.fill(b1)
     data_movement = [b1_dma_1k, b1_dma_5k, b1_dma_10k, b1_dma_15k] * 3
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark4":
-    e2e = np.array([76.118, 76.981, 129.35, 197.469,
-                    71.135, 72.709, 74.250, 104.201,
-                    70.431, 71.660, 73.014, 93.102])
+    e2e = np.array([72.231, 74.201, 128.21, 192.523,
+                    70.237, 70.510, 73.219, 101.879,
+                    69.311, 70.623, 72.786, 91.988])
     second_kernel.fill(b4_k2)
     acc_kernel.fill(b4)
     data_movement = [b4_dma_1k, b4_dma_5k, b4_dma_10k, b4_dma_15k] * 3
     data_movement = np.array(data_movement)
     data_movement = data_movement + control_pool_overhead
 elif benchmark_name == "benchmark5":
-    e2e = np.array([136.946, 201.275, 404.315, 614.216,
-                    75.604, 114.644, 183.729, 270.437,
-                    62.378, 110.997, 169.177, 232.950])
+    e2e = np.array([135.620, 200.121, 402.127, 613.012,
+                    72.172, 109.523, 182.129, 267.277,
+                    61.951, 108.952, 167.861, 228.164])
     second_kernel.fill(b5_k2)
     acc_kernel.fill(b5)
     data_movement = [b5_dma_1k, b5_dma_5k, b5_dma_10k, b5_dma_15k] * 3
@@ -211,7 +239,7 @@ if mode == "latency":
 
     ax.legend(loc='best')
     ax.set_ylabel('Latency (ms)')
-    title = f"latency_stacks_{benchmark_name}_acc_cpu.png"
+    title = f"latency_stacks_{benchmark_name}_acc_cpu_{interconnect_mode}.png"
 
 elif mode == "breakdown":
     ax.bar(labels, acc_kernel_ratio, width=0.5, label='kernel')
@@ -221,7 +249,7 @@ elif mode == "breakdown":
     ax.bar(labels, data_movement_ratio, width=0.5, bottom=bottom, label='dma')
     ax.legend(loc='best')
     ax.set_ylabel('Percentage (%)')
-    title = f"breakdown_{benchmark_name}_acc_cpu.png"
+    title = f"breakdown_{benchmark_name}_acc_cpu_{interconnect_mode}.png"
 
 ax.grid(True)
 #ax.set_ylabel('Latency (ms)')

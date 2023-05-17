@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gmean
 import sys
-from pcie_dma_model import dma_time
+from pcie_dma_model import dma_time, cxl_time
 
 #B1: camera: video -> YOLO, 1080*720*4*32
 #B2: audio:  FFT -> SVM, 1024*768
@@ -39,12 +39,12 @@ b5_shape = (4, 1024, 512)
 b5_data_size = b5_shape[0] * b5_shape[1] * b5_shape[2] * 4 # 4-byte float
 
 b1_k1 = 16.66/8
-b2_k1 = 30.507/8*4/3 # scaled it right
+b2_k1 = 30.507/8*4/3 # 5.0845
 b3_k1 = 30.507/8 # checked
 b4_k1 = 1.138*2
 b5_k1 = 8.095
 
-b1_k2 = 38.3/2  
+b1_k2 = 38.3/8  
 b2_k2 = 21.12/8
 b3_k2 = 31.85/8
 b4_k2 = 7.761
@@ -87,9 +87,12 @@ b4 = b4_k1 + b4_k2
 #b4_movement = b4_dma + control_pool_overhead
 b5 = b5_k1 + b5_k2
 
-acc_kernel = np.ones(12)
+print(f"{b1},{b2},{b3}, {b4}, {b5}")
+exit()
+
+acc_kernel = np.ones(16)
 #second_kernel = np.ones(12)
-dmx_exec = np.ones(12)
+dmx_exec = np.ones(16)
 
 pci_gen = "gen4"
 cpu_vendor = "intel"
@@ -118,21 +121,28 @@ else:
     print(f"invalid benchmark name {benchmark_name}")
     exit()
 
-b_dma_cpu = [dma_time("cpu", data_size, 1, pci_gen, cpu_vendor), dma_time("cpu", data_size, 5, pci_gen, cpu_vendor), dma_time("cpu", data_size, 10, pci_gen, cpu_vendor), dma_time("cpu", data_size, 15, pci_gen, cpu_vendor)]
-b_dma_pcie_overprovisioned = [dma_time("pcie", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie", data_size, 15, pci_gen, cpu_vendor)]
-#b_dma_pcie_underprovisioned = [dma_time("pcie-under", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
-b_dma_acc = [dma_time("acc", data_size, 1, pci_gen, cpu_vendor), dma_time("acc", data_size, 5, pci_gen, cpu_vendor), dma_time("acc", data_size, 10, pci_gen, cpu_vendor), dma_time("acc", data_size, 15, pci_gen, cpu_vendor)]
+interconnect = "pcie"
+if interconnect == "pcie":
+    b_dma_cpu = [dma_time("cpu", data_size, 1, pci_gen, cpu_vendor), dma_time("cpu", data_size, 5, pci_gen, cpu_vendor), dma_time("cpu", data_size, 10, pci_gen, cpu_vendor), dma_time("cpu", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_pcie_overprovisioned = [dma_time("pcie", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_pcie_underprovisioned = [dma_time("pcie-under", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_acc = [dma_time("acc", data_size, 1, pci_gen, cpu_vendor), dma_time("acc", data_size, 5, pci_gen, cpu_vendor), dma_time("acc", data_size, 10, pci_gen, cpu_vendor), dma_time("acc", data_size, 15, pci_gen, cpu_vendor)]
+elif interconnect == "cxl":
+    b_dma_cpu = [cxl_time("cpu", data_size, 1, pci_gen, cpu_vendor), cxl_time("cpu", data_size, 5, pci_gen, cpu_vendor), cxl_time("cpu", data_size, 10, pci_gen, cpu_vendor), cxl_time("cpu", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_pcie_overprovisioned = [cxl_time("pcie", data_size, 1, pci_gen, cpu_vendor), cxl_time("pcie", data_size, 5, pci_gen, cpu_vendor), cxl_time("pcie", data_size, 10, pci_gen, cpu_vendor), cxl_time("pcie", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_pcie_underprovisioned = [dma_time("pcie-under", data_size, 1, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 5, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 10, pci_gen, cpu_vendor), dma_time("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
+    b_dma_acc = [cxl_time("acc", data_size, 1, pci_gen, cpu_vendor), cxl_time("acc", data_size, 5, pci_gen, cpu_vendor), cxl_time("acc", data_size, 10, pci_gen, cpu_vendor), cxl_time("acc", data_size, 15, pci_gen, cpu_vendor)]
 
 b_dmx_cpu  = [dmx_time, dmx_time, dmx_time*10/8, dmx_time*15/8]
 b_dmx_pcie_overprovisioned = [dmx_time, dmx_time, dmx_time, dmx_time]
-#b_dmx_pcie_underprovisioned = [1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time]  
+b_dmx_pcie_underprovisioned = [1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time, 1.25*dmx_time]  
 b_dmx_acc  = [dmx_time, dmx_time, dmx_time, dmx_time]
 
-dmx_exec = [b_dmx_cpu, b_dmx_pcie_overprovisioned, b_dmx_acc]
+dmx_exec = [b_dmx_cpu, b_dmx_pcie_overprovisioned, b_dmx_acc, b_dmx_pcie_underprovisioned]
 dmx_exec = np.array(dmx_exec)
 dmx_exec = dmx_exec.flatten()
 
-data_movement = [b_dma_cpu, b_dma_pcie_overprovisioned, b_dma_acc]
+data_movement = [b_dma_cpu, b_dma_pcie_overprovisioned, b_dma_acc, b_dma_pcie_underprovisioned]
 data_movement = np.array(data_movement)
 data_movement = data_movement.flatten()
 
@@ -143,9 +153,9 @@ fig_title = f'{benchmark_name}: DMX configs (cpu,pcie,acc),' + f"PCIe {pci_gen} 
 
 
 labels = [f'cpu 1k', f'cpu 5k', f'cpu 10k' , f'cpu 15k', 
-          f'pcie+1k', f'pcie+5k', f'pcie+10k' , f'pcie+15k',
-          #f'pcie-1k', f'pcie-5k', f'pcie-10k' , f'pcie-15k',  
-          f'acc 1k', f'acc 5k', f'acc 10k' , f'acc 15k']
+          f'pcie+1k', f'pcie+5k', f'pcie+10k' , f'pcie+15k',            
+          f'acc 1k', f'acc 5k', f'acc 10k' , f'acc 15k',
+          f'pcie-1k', f'pcie-5k', f'pcie-10k' , f'pcie-15k']
 
 #data_movement = data_movement*2 # rx + tx
 total = dmx_exec + acc_kernel + data_movement
@@ -161,16 +171,19 @@ print("e2e total running time:")
 print(f"cpu config:{total[0:4]}")
 print(f"pcie config:{total[4:8]}")
 print(f"acc config:{total[8:12]}")
+print(f"pcie- config:{total[12:16]}")
 
 print("\nacc_kernel_ratio:")
 print(f"cpu config:{acc_kernel_ratio[0:4]}")
 print(f"pcie config:{acc_kernel_ratio[4:8]}")
 print(f"acc config:{acc_kernel_ratio[8:12]}")
+print(f"pcie- config:{acc_kernel_ratio[12:16]}")
 
 print("\ndma_ratio:")
 print(f"cpu config:{data_movement_ratio[0:4]}")
 print(f"pcie config:{data_movement_ratio[4:8]}")
 print(f"acc config:{data_movement_ratio[8:12]}")
+print(f"pcie- config:{data_movement_ratio[12:16]}")
 
 fig, ax = plt.subplots(figsize=(15,5))
 if mode == "latency":
@@ -184,7 +197,7 @@ if mode == "latency":
 
     ax.legend(loc='best')
     ax.set_ylabel('Latency (ms)')
-    title = f"latency_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png"
+    title = f"latency_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}_{interconnect}.png"
 
 elif mode == "breakdown":
     ax.bar(labels, acc_kernel_ratio, width=0.5, label='kernel')
@@ -194,7 +207,7 @@ elif mode == "breakdown":
     ax.bar(labels, data_movement_ratio, width=0.5, bottom=bottom, label='data movement')
     ax.legend(loc='best')
     ax.set_ylabel('Percentage (%)')
-    title = f'breakdown_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png'
+    title = f'breakdown_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}_{interconnect}.png'
 
 
 ax.grid(True)
