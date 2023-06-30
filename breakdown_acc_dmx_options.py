@@ -87,8 +87,8 @@ b4 = b4_k1 + b4_k2
 #b4_movement = b4_dma + control_pool_overhead
 b5 = b5_k1 + b5_k2
 
-print(f"{b1},{b2},{b3}, {b4}, {b5}")
-exit()
+# print(f"{b1},{b2},{b3}, {b4}, {b5}")
+# exit()
 
 acc_kernel = np.ones(16)
 #second_kernel = np.ones(12)

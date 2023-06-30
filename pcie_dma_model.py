@@ -26,6 +26,39 @@ def pcie_switching_delay(data_size:int, pcie_gen: str) -> float:
 # def pcie_transfer_power()
 # PCIe:11 pJ/b
 
+def pcie_power(dmx_placment: str,data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
+    acc_axi_delay = 57*0.001*0.001 # 57 ns
+    pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
+    mem_wrtie_hdr = 24 # 2B framing, 6B DLL header, 4B TLP header, and 12B MWr header
+    data_size = np.ceil(data_size/pcie_mps) * mem_wrtie_hdr + data_size
+
+    energy = 0
+    if dmx_placment == "cpu-only": # DMX uses CPU not DRX
+        power = 0
+    elif dmx_placment == "cpu": # DRX on CPU
+        power = pcie_power_dmx_on_cpu(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time = dma_time_dmx_on_cpu(data_size, num_kernel, pcie_gen, cpu_vendor)*4
+        print(f"cpu: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
+    elif dmx_placment == "pcie-under":
+        power = pcie_power_dmx_on_pcie_under(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time, _, _= dma_time_dmx_on_pcie_under(data_size, num_kernel, pcie_gen, cpu_vendor)
+    elif dmx_placment == "pcie":
+        power = pcie_power_dmx_on_pcie(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time, _, _ = dma_time_dmx_on_pcie(data_size, num_kernel, pcie_gen, cpu_vendor)
+        print(f"pcie: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
+    elif dmx_placment == "acc":
+        power = pcie_power_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time, _, _ = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)        
+        print(f"acc: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
+    elif dmx_placment == "acc-nosw":
+        power = pcie_power_dmx_on_acc_nosw(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time, _, _ = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)        
+        print(f"acc: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
+    else:
+        print("unsuppoted DMX placement")
+
+    return power
+
 def pcie_energy(dmx_placment: str,data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
     acc_axi_delay = 57*0.001*0.001 # 57 ns
     pcie_mps = 256 # max_payload_size of PCIe we assume, which is very common
@@ -48,6 +81,10 @@ def pcie_energy(dmx_placment: str,data_size:int, num_kernel: int, pcie_gen: str,
         print(f"pcie: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
     elif dmx_placment == "acc":
         power = pcie_power_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)
+        time, _, _ = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)        
+        print(f"acc: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
+    elif dmx_placment == "acc-nosw":
+        power = pcie_power_dmx_on_acc_nosw(data_size, num_kernel, pcie_gen, cpu_vendor)
         time, _, _ = dma_time_dmx_on_acc(data_size, num_kernel, pcie_gen, cpu_vendor)        
         print(f"acc: num-kernels:{num_kernel}, pcie-power:{power}, pcie-dma-time:{time}")
     else:
@@ -105,6 +142,30 @@ def pcie_power_dmx_on_acc(data_size:int, num_kernel: int, pcie_gen: str, cpu_ven
 
     # per DRX internal PCIe switch
     power = power + num_kernel*8.00
+
+    return power # in watts
+
+# The accelerator is deeply integrated with the Accelerator 
+# there's no internal PCIe switch
+def pcie_power_dmx_on_acc_nosw(data_size:int, num_kernel: int, pcie_gen: str, cpu_vendor: str) -> float:
+    power = 0
+    if pcie_gen == "gen4" and cpu_vendor == "intel":
+        acc_pcie_lane = 8
+        cpu_pcie_lane = 64
+        upstream_ports = int(cpu_pcie_lane/acc_pcie_lane)
+
+        if num_kernel == 1:
+            power = 0
+        elif num_kernel == 5:
+            power = 2 * 11.44 # use 26-lane, lanes = 8*2 (2 downstream) + 8 (upstream) = 24
+        elif num_kernel == 10:
+            power = 6*11.44 + 2*18.81 # lanes = 8*2 (2 downstream) + 8 (upstream) = 24 or 8*4 (2 downstream) + 8 (upstream) = 40
+        elif num_kernel == 15:
+            power = upstream_ports * 18.81 # use 50-lane, lanes = 8*4 (2 downstream) + 8 (upstream) = 40
+        else:
+            print("un-supported number of kernels")
+    else:
+        print("un-supported")
 
     return power # in watts
 

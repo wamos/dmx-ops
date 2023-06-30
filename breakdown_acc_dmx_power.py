@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gmean
 import sys
-from pcie_dma_model import pcie_energy
+from pcie_dma_model import pcie_power
 
 #B1: camera: video -> YOLO, 1080*720*4*32
 #B2: audio:  FFT -> SVM, 1024*768
@@ -113,33 +113,33 @@ else:
     exit()
 
 # pcie_energy = data movement PCIe per bit power*time + data movement PCIe switch power*time
-pcie_energy_cpu = [pcie_energy("cpu", data_size, 1, pci_gen, cpu_vendor), pcie_energy("cpu", data_size, 5, pci_gen, cpu_vendor), pcie_energy("cpu", data_size, 10, pci_gen, cpu_vendor), pcie_energy("cpu", data_size, 15, pci_gen, cpu_vendor)]
-pcie_energy_pcie_overprovisioned = [pcie_energy("pcie", data_size, 1, pci_gen, cpu_vendor), pcie_energy("pcie", data_size, 5, pci_gen, cpu_vendor), pcie_energy("pcie", data_size, 10, pci_gen, cpu_vendor), pcie_energy("pcie", data_size, 15, pci_gen, cpu_vendor)]
-pcie_energy_pcie_under= [pcie_energy("pcie-under", data_size, 1, pci_gen, cpu_vendor), pcie_energy("pcie-under", data_size, 5, pci_gen, cpu_vendor), pcie_energy("pcie-under", data_size, 10, pci_gen, cpu_vendor), pcie_energy("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
-pcie_energy_acc = [pcie_energy("acc", data_size, 1, pci_gen, cpu_vendor), pcie_energy("acc", data_size, 5, pci_gen, cpu_vendor), pcie_energy("acc", data_size, 10, pci_gen, cpu_vendor), pcie_energy("acc", data_size, 15, pci_gen, cpu_vendor)]
-pcie_energy_acc_nosw = [pcie_energy("acc-nosw", data_size, 1, pci_gen, cpu_vendor), pcie_energy("acc-nosw", data_size, 5, pci_gen, cpu_vendor), pcie_energy("acc-nosw", data_size, 10, pci_gen, cpu_vendor), pcie_energy("acc-nosw", data_size, 15, pci_gen, cpu_vendor)]
+pcie_power_cpu = [pcie_power("cpu", data_size, 1, pci_gen, cpu_vendor), pcie_power("cpu", data_size, 5, pci_gen, cpu_vendor), pcie_power("cpu", data_size, 10, pci_gen, cpu_vendor), pcie_power("cpu", data_size, 15, pci_gen, cpu_vendor)]
+pcie_power_pcie_overprovisioned = [pcie_power("pcie", data_size, 1, pci_gen, cpu_vendor), pcie_power("pcie", data_size, 5, pci_gen, cpu_vendor), pcie_power("pcie", data_size, 10, pci_gen, cpu_vendor), pcie_power("pcie", data_size, 15, pci_gen, cpu_vendor)]
+pcie_power_pcie_under= [pcie_power("pcie-under", data_size, 1, pci_gen, cpu_vendor), pcie_power("pcie-under", data_size, 5, pci_gen, cpu_vendor), pcie_power("pcie-under", data_size, 10, pci_gen, cpu_vendor), pcie_power("pcie-under", data_size, 15, pci_gen, cpu_vendor)]
+pcie_power_acc = [pcie_power("acc", data_size, 1, pci_gen, cpu_vendor), pcie_power("acc", data_size, 5, pci_gen, cpu_vendor), pcie_power("acc", data_size, 10, pci_gen, cpu_vendor), pcie_power("acc", data_size, 15, pci_gen, cpu_vendor)]
+pcie_power_acc_nosw = [pcie_power("acc-nosw", data_size, 1, pci_gen, cpu_vendor), pcie_power("acc-nosw", data_size, 5, pci_gen, cpu_vendor), pcie_power("acc-nosw", data_size, 10, pci_gen, cpu_vendor), pcie_power("acc-nosw", data_size, 15, pci_gen, cpu_vendor)]
 
 #pcie_energy_total = [pcie_energy_cpu, pcie_energy_pcie_overprovisioned, pcie_energy_acc, pcie_energy_pcie_under]
-pcie_energy_total = [pcie_energy_cpu, pcie_energy_pcie_overprovisioned, pcie_energy_acc, pcie_energy_acc_nosw]
-pcie_energy_total = np.array(pcie_energy_total)
-pcie_energy_total = pcie_energy_total.flatten()
+pcie_power_total = [pcie_power_cpu, pcie_power_pcie_overprovisioned, pcie_power_acc, pcie_power_acc_nosw]
+pcie_power_total = np.array(pcie_power_total)
+pcie_power_total = pcie_power_total.flatten()
 
 drx_asic_power = 4.1
 # in mJ
-drx_energy_cpu  = np.array([dmx_time*8*drx_asic_power, dmx_time*8*drx_asic_power, dmx_time*10/8*8*drx_asic_power, dmx_time*15/8*8*drx_asic_power])
+drx_power_cpu  = np.array([8*drx_asic_power, 8*drx_asic_power, 8*drx_asic_power, 8*drx_asic_power])
 
-drx_energy_pcie_overprovisioned = [dmx_time*4*drx_asic_power, dmx_time*8*drx_asic_power, dmx_time*12*drx_asic_power, dmx_time*16*drx_asic_power]
-drx_energy_pcie_under = [dmx_time*4*drx_asic_power, dmx_time*4*drx_asic_power, dmx_time*8*drx_asic_power, dmx_time*12*drx_asic_power]
+drx_power_pcie_overprovisioned = [4*drx_asic_power, 8*drx_asic_power, 12*drx_asic_power, 16*drx_asic_power]
+drx_power_pcie_under = [4*drx_asic_power, 4*drx_asic_power, 8*drx_asic_power, 12*drx_asic_power]
 
-drx_energy_acc  = [dmx_time * drx_asic_power, dmx_time*5*drx_asic_power, dmx_time*10*drx_asic_power, dmx_time*15*drx_asic_power]
-drx_energy_acc_nosw = drx_energy_acc
+drx_power_acc  = [drx_asic_power, 5*drx_asic_power, 10*drx_asic_power, 15*drx_asic_power]
+drx_power_acc_nosw = drx_power_acc
 
 #drx_energy_total = [drx_energy_cpu, drx_energy_pcie_overprovisioned, drx_energy_acc, drx_energy_pcie_under]
-drx_energy_total = [drx_energy_cpu, drx_energy_pcie_overprovisioned, drx_energy_acc, drx_energy_acc_nosw]
-drx_energy_total = np.array(drx_energy_total)
-drx_energy_total = drx_energy_total.flatten()
+drx_power_total = [drx_power_cpu, drx_power_pcie_overprovisioned, drx_power_acc, drx_power_acc_nosw]
+drx_power_total = np.array(drx_power_total)
+drx_power_total = drx_power_total.flatten()
 
-dmx_energy_total = drx_energy_total + pcie_energy_total
+dmx_energy_total = drx_power_total + pcie_power_total
 
 fig_title = f'{benchmark_name}: DMX configs (cpu,pcie,acc),' + f"PCIe {pci_gen} with CPU vendor {cpu_vendor}\n" + f"pcie+ for overprovisioned DRX, pcie- for underprovisioned DRX, acc- means without internal pcie switch BITW"
 
@@ -153,26 +153,25 @@ labels = [f'cpu 1k', f'cpu 5k', f'cpu 10k' , f'cpu 15k',
           f'acc- 1k', f'acc- 5k', f'acc- 10k' , f'acc- 15k']
 
 
-print("pcie_energy_total")
+#print("pcie_energy_total")
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
-print(pcie_energy_total/1000)
+print(f"pcie_power_total:{pcie_power_total}")
+print(f"drx_power_total:{drx_power_total}")
 
-drx_ratio = drx_energy_total/dmx_energy_total
-data_movement_ratio = pcie_energy_total/dmx_energy_total
+drx_ratio = drx_power_total/dmx_energy_total
+data_movement_ratio = pcie_power_total/dmx_energy_total
 
 fig, ax = plt.subplots(figsize=(15,5))
-if mode == "energy":
-    drx_energy_total = drx_energy_total/1000
-    ax.bar(labels, drx_energy_total, width=0.5, label='data restructuring')
-    bottom = drx_energy_total
+if mode == "power":
+    ax.bar(labels, drx_power_total, width=0.5, label='data restructuring')
+    bottom = drx_power_total
 
-    pcie_energy_total = pcie_energy_total/1000
-    p = ax.bar(labels, pcie_energy_total, width=0.5, bottom=bottom, label='data movement')
+    p = ax.bar(labels, pcie_power_total, width=0.5, bottom=bottom, label='data movement')
     ax.bar_label(p, fmt='%.3f', label_type='edge')
 
     ax.legend(loc='best')
-    ax.set_ylabel('Energy (Joule)')
-    title = f"energy_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png"
+    ax.set_ylabel('Power (Watts)')
+    title = f"power_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png"
 
 elif mode == "breakdown":
     ax.bar(labels, drx_ratio, width=0.5, label='data restructuring')
@@ -181,7 +180,7 @@ elif mode == "breakdown":
 
     ax.legend(loc='best')
     ax.set_ylabel('Percentage (%)')
-    title = f'energy_breakdown_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png'
+    title = f'power_breakdown_{benchmark_name}_acc_dmx_configs_{cpu_vendor}_{pci_gen}.png'
 
 
 ax.grid(True)
